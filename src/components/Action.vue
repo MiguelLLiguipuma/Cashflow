@@ -8,19 +8,18 @@
           <button class="close-btn" @click="closeModal">✖</button>
         </div>
         <div class="modal-content">
-          <!-- Contenido del formulario dentro del modal -->
           <form @submit.prevent="submit">
             <div class="field">
-              <label for="title">Titulo</label>
-              <input type="text" id="title" v-model="title">
+              <label for="title">Título</label>
+              <input type="text" id="title" v-model="title" class="input-field" required>
             </div>
             <div class="field">
               <label for="amount">Monto</label>
-              <input type="number" id="amount" v-model="amount">
+              <input type="number" id="amount" v-model="amount" class="input-field" required>
             </div>
             <div class="field">
               <label for="description">Descripción</label>
-              <textarea rows="4" id="description" v-model="description"></textarea>
+              <textarea rows="4" id="description" v-model="description" class="input-field"></textarea>
             </div>
             <div class="field radio-group">
               <label class="radio-label">
@@ -29,11 +28,11 @@
               </label>
               <label class="radio-label">
                 <input type="radio" v-model="movementType" value="Gasto" />
-                <span>Gastos</span>
+                <span>Gasto</span>
               </label>
             </div>
             <div class="action">
-              <button >Agregar movimiento</button>
+              <button class="submit-btn">Agregar movimiento</button>
             </div>
           </form>
         </div>
@@ -42,37 +41,56 @@
   </Teleport>
 </template>
 
-<script setup >
-import { ref,defineEmits } from "vue";
-//import Modal from "./Modal.vue"
+<script setup>
+import { ref, defineEmits } from "vue";
 
 const showModal = ref(false);
 const title = ref("");
 const amount = ref(0);
 const description = ref("");
 const movementType = ref("Ingreso");
+const errors = ref({}); // Para almacenar errores de validación
+
 
 const emit = defineEmits(["create"]);
 
 const closeModal = () => {
   showModal.value = false;
+  resetForm();
+};
+
+const resetForm = () => {
+  title.value = "";
+  description.value = "";
+  amount.value = 0;
+  movementType.value = "Ingreso";
+  errors.value = {}; // Limpia los errores
 };
 
 
 const submit = () => {
-  // Lógica para procesar el formulario
-  showModal.value = !showModal.value;
-  emit("create",{
-    title:title.value,
-    description:description.value,
-    amount:movementType.value === "Ingreso" ? amount.value : -amount.value,
+  errors.value = {}; // Resetea los errores
+
+  // Validación
+  if (!title.value.trim()) {
+    errors.value.title = "El título es requerido.";
+  }
+  if (!amount.value) {
+    errors.value.amount = "El monto es requerido.";
+  }
+
+  // Si hay errores, no se envía el formulario
+  if (Object.keys(errors.value).length) return;
+
+  emit("create", {
+    title: title.value,
+    description: description.value,
+    amount: movementType.value === "Ingreso" ? amount.value : -amount.value,
     time: new Date().getTime(),
     id: new Date(),
-  }); // Cierra el modal al enviar
-  title.value = "";
-  description.value ="";
-  amount.value = 0;
-  movementType.value = "Ingreso"
+  });
+  
+  closeModal(); // Cierra el modal si no hay errores
 };
 </script>
 
@@ -81,17 +99,20 @@ const submit = () => {
 .primary-btn {
   color: white;
   background-color: var(--brand-blue);
-  padding: 10px 20px;
+  padding: 12px 24px;
   border: none;
-  border-radius: 6px;
-  font-size: 1rem;
+  border-radius: 8px;
+  font-size: 1.1rem;
   cursor: pointer;
-  transition: background-color 0.3s ease, transform 0.2s ease;
+  font-weight: 600;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .primary-btn:hover {
   background-color: #004080;
-  transform: translateY(-2px);
+  transform: translateY(-3px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
 }
 
 /* Overlay del modal */
@@ -101,7 +122,7 @@ const submit = () => {
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(0, 0, 0, 0.6); /* Más opacidad para un enfoque más claro en el modal */
+  background-color: rgba(0, 0, 0, 0.6);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -113,8 +134,8 @@ const submit = () => {
   background-color: #fff;
   width: 90%;
   max-width: 500px;
-  border-radius: 12px; /* Bordes más suaves para un diseño moderno */
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15); /* Sombras más profundas */
+  border-radius: 12px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
   overflow: hidden;
   z-index: 1001;
   animation: fadeIn 0.3s ease-out;
@@ -128,7 +149,7 @@ const submit = () => {
   padding: 16px 24px;
   background-color: var(--brand-blue);
   color: #fff;
-  border-bottom: 2px solid #004080; /* Línea inferior para resaltar el encabezado */
+  border-bottom: 2px solid #004080;
 }
 
 .title {
@@ -163,89 +184,46 @@ const submit = () => {
 form {
   display: flex;
   flex-direction: column;
-  align-items: center; /* Centra horizontalmente los elementos del formulario */
+  align-items: stretch; /* Cambiado a stretch para que los campos ocupen el ancho total */
   justify-content: center;
-  font-size: 1.2rem;
-  width: 100%;
 }
 
 .field {
-  display: flex;
-  flex-direction: column;
-  margin-bottom: 16px;
-  width: 100%;
+  margin-bottom: 16px; /* Espaciado entre campos */
 }
 
-label {
-  margin-bottom: 8px;
-  font-weight: 500;
-  color: #004080; /* Color de etiqueta más claro para mejor contraste */
-}
-
-/* Ajustes generales para los campos de formulario */
-.field input,
-.field textarea {
+.input-field {
   width: 100%;
-  padding: 10px; /* Aumenta el padding para mayor comodidad */
-  font-size: 1rem;
-  border: 1px solid #ccc; /* Borde más delgado y ligero */
-  border-radius: 8px;
-  box-sizing: border-box;
-  line-height: 1.5;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
   transition: border-color 0.3s ease;
 }
 
-/* Ajuste específico para textarea */
-.field textarea {
-  min-height: 120px; /* Ajusta la altura mínima para que coincida mejor con el diseño */
-  resize: vertical; /* Permite cambiar el tamaño verticalmente si es necesario */
+.input-field:focus {
+  border-color: var(--brand-blue);
+  outline: none; /* Evita el contorno por defecto del navegador */
 }
 
-/* Asegura que las etiquetas y los campos estén alineados correctamente */
-.field {
-  display: flex;
-  flex-direction: column;
-  margin-bottom: 16px;
-  align-items: flex-start; /* Alinea las etiquetas al principio de los campos */
+/* Estilos de los botones */
+.submit-btn {
+  color: white;
+  background-color: var(--brand-blue);
+  border: none;
+  border-radius: 5px;
+  padding: 10px 20px;
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
 }
 
-/* Ajuste de los radio buttons */
-.radio-group {
-  display: flex;
-  justify-content: space-around;
-  width: 100%;
-  margin-top: 16px;
-  align-items: center;
-}
+.submit-btn:hover {
+  background-color: #004080;
+ 
 
-.radio-label {
-  display: flex;
-  align-items: left;
-  font-weight: 300;
-}
-
-.radio-label input {
-  margin-right: 8px;
-}
-
-
-/* Estilo del botón de acción */
-.action {
-  display: flex;
-  justify-content: center;
-  width: 100%;
-  margin-top: 24px;
-}
-
-/* Animaciones */
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: scale(0.95);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
+  
 }
 </style>
+
+
+
